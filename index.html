@@ -2,65 +2,71 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>K리그 인터랙티브 지도</title>
+    <title>K-League Interactive Map</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { margin: 0; display: flex; background: #0f172a; color: white; height: 100vh; }
-        #map-area { flex: 1; display: flex; justify-content: center; align-items: center; }
+        body { margin: 0; background: #020617; color: white; display: flex; height: 100vh; overflow: hidden; }
         
-        /* 지도 내 지역 스타일 */
-        .region { fill: #334155; stroke: white; cursor: pointer; transition: transform 0.3s, fill 0.3s; }
-        .region:hover { fill: #38bdf8; transform: scale(1.1); }
+        /* 1. 지도 영역 */
+        #map-container { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; }
+        svg { width: 80%; height: 80%; transition: filter 0.5s; }
+        
+        /* 지도 인터랙션 */
+        .region { fill: #334155; stroke: #94a3b8; cursor: pointer; transition: 0.3s; }
+        .region:hover { fill: #38bdf8; transform: scale(1.05); }
+        .blur-all .region { filter: blur(5px); opacity: 0.3; }
+        .blur-all .region.active { filter: blur(0); opacity: 1; transform: scale(1.2); }
 
-        #info-area { width: 300px; background: #1e293b; padding: 20px; overflow-y: auto; }
-        .team-box { margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        .team-box img { width: 60px; height: 60px; }
+        /* 2. 상세 정보 패널 */
+        #panel { width: 350px; background: #1e293b; padding: 20px; border-left: 1px solid #334155; overflow-y: auto; }
+        .team-item { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer; padding: 10px; background: #0f172a; border-radius: 8px; }
+        .team-item:hover { background: #38bdf8; color: black; }
     </style>
 </head>
 <body>
 
-<div id="map-area">
-    <svg width="400" height="600" viewBox="0 0 400 600">
-        <path id="서울" class="region" d="M100,100 L200,100 L200,200 L100,200 Z" />
-        <path id="영남" class="region" d="M250,300 L350,300 L350,400 L250,400 Z" />
+<div id="map-container">
+    <svg id="korea-map" viewBox="0 0 500 800">
+        <path id="서울" class="region" d="..." />
+        <path id="경기" class="region" d="..." />
+        <path id="영남" class="region" d="..." />
     </svg>
 </div>
 
-<div id="info-area">
-    <h2>구단 정보</h2>
-    <div id="team-info">지역을 클릭하세요.</div>
+<div id="panel">
+    <h2 id="region-title">지역을 선택하세요</h2>
+    <div id="team-list"></div>
 </div>
 
 <script>
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2PPMP-2cRZp1FA6rRGonJVa_I_otlgeqJF1dPD84fm6wq43USi06t8Y2b2gjo2Hjt6Jx8fE0yWz3l/pub?gid=0&single=true&output=csv';
+    const csvUrl = '당신의_CSV_게시_링크';
     let teamData = [];
 
-    // 1. 구글 시트 데이터 가져오기
-    Papa.parse(csvUrl, {
-        download: true, header: true,
-        complete: (results) => { teamData = results.data; }
-    });
+    // 데이터 로드
+    Papa.parse(csvUrl, { download: true, header: true, complete: (res) => { teamData = res.data; } });
 
-    // 2. 지도 클릭 이벤트
+    // 지역 클릭 이벤트
     document.querySelectorAll('.region').forEach(region => {
-        region.addEventListener('click', () => {
-            const regionName = region.id; // path의 id를 지역명으로 사용
-            const filtered = teamData.filter(t => t.지역 === regionName);
+        region.addEventListener('click', function() {
+            // 1. 시각 효과: 블러 처리
+            document.getElementById('korea-map').classList.add('blur-all');
+            document.querySelectorAll('.region').forEach(r => r.classList.remove('active'));
+            this.classList.add('active');
+
+            // 2. 정보 출력
+            const regionName = this.id;
+            document.getElementById('region-title').innerText = regionName;
+            const teams = teamData.filter(t => t.지역 === regionName);
             
-            const infoDiv = document.getElementById('team-info');
-            infoDiv.innerHTML = `<h3>${regionName} 소속 구단</h3>`;
-            
-            filtered.forEach(t => {
-                infoDiv.innerHTML += `
-                    <div class="team-box">
-                        <img src="${t.로고이미지URL}" onerror="this.src='https://via.placeholder.com/60'">
-                        <p><strong>${t.팀명}</strong> (${t.리그})</p>
-                    </div>
-                `;
-            });
+            const list = document.getElementById('team-list');
+            list.innerHTML = teams.map(t => `
+                <div class="team-item" onclick="alert('${t.특징}')">
+                    <img src="${t.로고이미지URL}" width="40">
+                    <span>${t.팀명}</span>
+                </div>
+            `).join('');
         });
     });
 </script>
-
 </body>
 </html>
