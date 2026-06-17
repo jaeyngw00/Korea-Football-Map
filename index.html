@@ -2,27 +2,65 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>K리그 팀 인터랙티브 맵</title>
-    <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; }
-        #map-area { width: 60%; padding: 20px; }
-        #info-area { width: 40%; padding: 20px; background: #1e293b; }
-        .team-card { margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #334155; }
-        .team-card img { width: 50px; display: block; }
-    </style>
+    <title>K리그 인터랙티브 지도</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { margin: 0; display: flex; background: #0f172a; color: white; height: 100vh; }
+        #map-area { flex: 1; display: flex; justify-content: center; align-items: center; }
+        
+        /* 지도 내 지역 스타일 */
+        .region { fill: #334155; stroke: white; cursor: pointer; transition: transform 0.3s, fill 0.3s; }
+        .region:hover { fill: #38bdf8; transform: scale(1.1); }
+
+        #info-area { width: 300px; background: #1e293b; padding: 20px; overflow-y: auto; }
+        .team-box { margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .team-box img { width: 60px; height: 60px; }
+    </style>
 </head>
 <body>
 
-    <div id="map-area">
-        <h1>대한민국 지도</h1>
-        </div>
+<div id="map-area">
+    <svg width="400" height="600" viewBox="0 0 400 600">
+        <path id="서울" class="region" d="M100,100 L200,100 L200,200 L100,200 Z" />
+        <path id="영남" class="region" d="M250,300 L350,300 L350,400 L250,400 Z" />
+    </svg>
+</div>
 
-    <div id="info-area">
-        <h1>팀 정보</h1>
-        <div id="team-list">데이터를 불러오는 중...</div>
-    </div>
+<div id="info-area">
+    <h2>구단 정보</h2>
+    <div id="team-info">지역을 클릭하세요.</div>
+</div>
 
-    <script src="script.js"></script>
+<script>
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2PPMP-2cRZp1FA6rRGonJVa_I_otlgeqJF1dPD84fm6wq43USi06t8Y2b2gjo2Hjt6Jx8fE0yWz3l/pub?gid=0&single=true&output=csv';
+    let teamData = [];
+
+    // 1. 구글 시트 데이터 가져오기
+    Papa.parse(csvUrl, {
+        download: true, header: true,
+        complete: (results) => { teamData = results.data; }
+    });
+
+    // 2. 지도 클릭 이벤트
+    document.querySelectorAll('.region').forEach(region => {
+        region.addEventListener('click', () => {
+            const regionName = region.id; // path의 id를 지역명으로 사용
+            const filtered = teamData.filter(t => t.지역 === regionName);
+            
+            const infoDiv = document.getElementById('team-info');
+            infoDiv.innerHTML = `<h3>${regionName} 소속 구단</h3>`;
+            
+            filtered.forEach(t => {
+                infoDiv.innerHTML += `
+                    <div class="team-box">
+                        <img src="${t.로고이미지URL}" onerror="this.src='https://via.placeholder.com/60'">
+                        <p><strong>${t.팀명}</strong> (${t.리그})</p>
+                    </div>
+                `;
+            });
+        });
+    });
+</script>
+
 </body>
 </html>
